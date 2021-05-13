@@ -52,6 +52,12 @@ User.hasMany(Subscription, {
 User.belongsToMany(Video, { through: View, foreignKey: "userId" });
 Video.belongsToMany(User, { through: View, foreignKey: "videoId" });
 
+// Alexi: to fix N+1 count issue, need to explicitly associate the View with the Video.
+// This is surprisingly tricky.
+// This seems to add videoId to the Video table...
+// Video.hasMany(View, { foreignKey: 'videoId' }); // TODO: try videoId? ugh.
+// View.belongsTo(Video, { foreignKey: 'id' });
+
 module.exports = {
   User,
   Video,
@@ -59,4 +65,5 @@ module.exports = {
   Comment,
   Subscription,
   View,
+  sequelize
 };
