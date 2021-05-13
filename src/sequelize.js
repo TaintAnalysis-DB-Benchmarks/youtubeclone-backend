@@ -9,7 +9,7 @@ const ViewModel = require("./models/View");
 
 pg.defaults.ssl = true;
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  logging: false,
+  logging: true,
   dialectOptions: {
     ssl: {
       require: true,
