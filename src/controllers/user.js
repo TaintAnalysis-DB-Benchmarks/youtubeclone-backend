@@ -1,6 +1,8 @@
 const { Op } = require("sequelize");
+const Sequelize = require("sequelize");
 const { VideoLike, Video, User, Subscription, View } = require("../sequelize");
 const asyncHandler = require("../middlewares/asyncHandler");
+const {performance} = require('perf_hooks');
 
 exports.toggleSubscribe = asyncHandler(async (req, res, next) => {
   if (req.user.id === req.params.id) {
@@ -44,6 +46,7 @@ exports.toggleSubscribe = asyncHandler(async (req, res, next) => {
 });
 
 exports.getFeed = asyncHandler(async (req, res, next) => {
+  console.log('GET FEED');
   const subscribedTo = await Subscription.findAll({
     where: {
       subscriber: req.user.id,
@@ -65,12 +68,24 @@ exports.getFeed = asyncHandler(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
+  const viewCounts = await Video.findAll({
+    include: {
+      model: View,
+      attributes: []
+    },
+    where: {
+      id: feed.map(r => r.id)
+    },
+    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Views.videoId")), "viewCount"]],
+    group: "Video.id"
+  });
+
   if (!feed.length) {
     return res.status(200).json({ success: true, data: feed });
   }
 
   feed.forEach(async (video, index) => {
-    const views = await View.count({ where: { videoId: video.id } });
+    const views = viewCounts.find(r => r.id === video.id).dataValues.viewCount;
     video.setDataValue("views", views);
 
     if (index === feed.length - 1) {
@@ -117,20 +132,48 @@ exports.searchUser = asyncHandler(async (req, res, next) => {
   if (!users.length)
     return res.status(200).json({ success: true, data: users });
 
+  const subscriptionsForLoop = await Subscription.findAll({
+    where: {
+      [Op.and]: [{ subscriber: req.user.id }, { subscribeTo: users.map(u => u.id) }],
+    }
+  });
+
+  const subscriptionCounts = await User.findAll({
+    where: {
+      id: users.map(r => r.id)
+    },
+    include: {
+      model: Subscription,
+      attributes: []
+    },
+    group: "User.id",
+    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Subscriptions.subscribeTo")), "subscriptionCount"]]
+  });
+
+  const videoCounts = await User.findAll({
+    where: {
+      id: users.map(r => r.id)
+    },
+    include: {
+      model: Video,
+      attributes: [],
+      through: {attributes: []}
+    },
+    group: "User.id",
+    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Videos.userId")), "videoCount"]]
+  });
+
   users.forEach(async (user, index) => {
-    const subscribersCount = await Subscription.count({
-      where: { subscribeTo: user.id },
-    });
+    const subscribersCount = subscriptionCounts.find(r => r.id === user.id).dataValues.subscriptionCount;
 
-    const videosCount = await Video.count({
-      where: { userId: user.id },
-    });
+    const videosCount = videoCounts.find(r => r.id === user.id).dataValues.videoCount;
 
-    const isSubscribed = await Subscription.findOne({
-      where: {
-        [Op.and]: [{ subscriber: req.user.id }, { subscribeTo: user.id }],
-      },
-    });
+    // const isSubscribed = await Subscription.findOne({
+    //   where: {
+    //     [Op.and]: [{ subscriber: req.user.id }, { subscribeTo: user.id }],
+    //   },
+    // });
+    const isSubscribed = subscriptionsForLoop.find(s => s.subscribeTo === user.id);
 
     const isMe = req.user.id === user.id;
 
@@ -195,10 +238,23 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
     },
   });
 
+  const subscriptionCounts = await User.findAll({
+    where: {
+      id: channels.map(r => r.id)
+    },
+    include: {
+      model: Subscription,
+      attributes: []
+    },
+    group: "User.id",
+    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Subscriptions.subscribeTo")), "subscriptionCount"]]
+  });
+  
   channels.forEach(async (channel) => {
-    const subscribersCount = await Subscription.count({
-      where: { subscribeTo: channel.id },
-    });
+    const subscribersCount = subscriptionCounts.find(r => r.id === channel.id).dataValues.subscriptionCount;
+    // const subscribersCount = await Subscription.count({
+    //   where: { subscribeTo: channel.id },
+    // });
     channel.setDataValue("subscribersCount", subscribersCount);
   });
 
@@ -212,8 +268,20 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
   if (!videos.length)
     return res.status(200).json({ success: true, data: user });
 
+  const viewCounts = await Video.findAll({
+    where: {
+      id: videos.map(r => r.id)
+    },
+    include: {
+      model: View,
+      attributes: []
+    },
+    group: "Video.id",
+    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Views.videoId")), "viewCount"]]
+  });
+
   videos.forEach(async (video, index) => {
-    const views = await View.count({ where: { videoId: video.id } });
+    const views = viewCounts.find(r => r.id === video.id).dataValues.viewCount; // await View.count({ where: { videoId: video.id } });
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
@@ -251,6 +319,9 @@ exports.recommendedVideos = asyncHandler(async (req, res, next) => {
 });
 
 exports.recommendChannels = asyncHandler(async (req, res, next) => {
+  console.log('()()()()()()))))))))))))))))))))))))))))) recommendChannels');
+  const t0 = performance.now();
+
   const channels = await User.findAll({
 		limit: 10,
     attributes: ["id", "username", "avatar", "channelDescription"],
@@ -264,12 +335,21 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
   if (!channels.length)
     return res.status(200).json({ success: true, data: channels });
 
+  // const subscriptions = await Subscription.findAll({
+  //   where: {
+  //     subscriber: req.user.id,
+  //     subscribeTo: channels.map(u => u.id)
+  //   }
+  // });
+
   channels.forEach(async (channel, index) => {
+
     const subscribersCount = await Subscription.count({
       where: { subscribeTo: channel.id },
     });
     channel.setDataValue("subscribersCount", subscribersCount);
 
+    // const isSubscribed = subscriptions.find(data => data.subscribeTo === channel.id);
     const isSubscribed = await Subscription.findOne({
       where: {
         subscriber: req.user.id,
@@ -283,6 +363,10 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
     channel.setDataValue("videosCount", videosCount);
 
     if (index === channels.length - 1) {
+      const t1 = performance.now();
+      console.log('==========================================');
+      console.log('time elapsed: ', t1 - t0);
+      console.log('==========================================');
       return res.status(200).json({ success: true, data: channels });
     }
   });
@@ -297,6 +381,7 @@ exports.getHistory = asyncHandler(async (req, res, next) => {
 });
 
 const getVideos = async (model, req, res, next) => {
+
   const videoRelations = await model.findAll({
     where: { userId: req.user.id },
     order: [["createdAt", "ASC"]],
@@ -317,12 +402,24 @@ const getVideos = async (model, req, res, next) => {
     },
   });
 
+  const viewCounts = await Video.findAll({
+    where: {
+      id: videos.map(r => r.id)
+    },
+    include: {
+      model: View,
+      attributes: []
+    },
+    group: "Video.id",
+    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Views.videoId")), "viewCount"]]
+  });
+
   if (!videos.length) {
     return res.status(200).json({ success: true, data: videos });
   }
 
   videos.forEach(async (video, index) => {
-    const views = await View.count({ where: { videoId: video.id } });
+    const views = viewCounts.find(r => r.id === video.id).dataValues.viewCount; // await View.count({ where: { videoId: video.id } });
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
