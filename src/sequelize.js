@@ -52,6 +52,10 @@ User.hasMany(Subscription, {
 User.belongsToMany(Video, { through: View, foreignKey: "userId" });
 Video.belongsToMany(User, { through: View, foreignKey: "videoId" });
 
+Video.hasMany(View, { foreignKey: "videoId" })
+User.hasMany(View, { foreignKey: "userId" })
+// View.belongsTo(Video, { foreignKey: "videoId" })
+
 module.exports = {
   User,
   Video,

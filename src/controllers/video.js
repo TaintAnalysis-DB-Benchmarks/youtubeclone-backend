@@ -1,3 +1,4 @@
+const Sequelize = require("sequelize");
 const { Op } = require("sequelize");
 const {
   User,
@@ -285,11 +286,28 @@ exports.searchVideo = asyncHandler(async (req, res, next) => {
     },
   });
 
+  try {
+    const viewCounts = await Video.findAll({
+      attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Views.videoId")), "viewCount"]],
+      include: {
+        model: View,
+        attributes: []
+      },
+      where: {
+        id: videos.map(r => r.id)
+      },
+      group: "Video.id",
+    });
+  } catch (e) {
+    console.log(e);
+  }
+
   if (!videos.length)
     return res.status(200).json({ success: true, data: videos });
 
   videos.forEach(async (video, index) => {
     const views = await View.count({ where: { videoId: video.id } });
+    // viewCounts.find(r => r.id === video.id).dataValues.viewCount
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {

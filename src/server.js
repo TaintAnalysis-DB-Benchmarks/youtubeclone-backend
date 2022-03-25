@@ -9,6 +9,9 @@ const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
 
+// For monitoring.
+// app.use(require('express-status-monitor')());
+
 app.use(express.json());
 app.use(cors());
 
