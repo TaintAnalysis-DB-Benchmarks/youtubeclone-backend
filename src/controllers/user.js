@@ -335,64 +335,65 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
   if (!channels.length)
     return res.status(200).json({ success: true, data: channels });
 
-  const subscriptions = await Subscription.findAll({
-    where: {
-      subscriber: req.user.id,
-      subscribeTo: channels.map(u => u.id)
-    }
-  });
+  // Post refactor:
+  // const subscriptions = await Subscription.findAll({
+  //   where: {
+  //     subscriber: req.user.id,
+  //     subscribeTo: channels.map(r => r.id)
+  //   }
+  // });
 
-  const subscriptionCounts = await User.findAll({
-    where: {
-      id: channels.map(r => r.id)
-    },
-    include: {
-      model: Subscription,
-      attributes: []
-    },
-    group: "User.id",
-    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Subscriptions.subscribeTo")), "subscriptionCount"]]
-  });
+  // const subscriptionCounts = await Subscription.findAll({
+  //   where: {
+  //     subscribeTo: channels.map(r => r.id)
+  //   },
+  //   group: "Subscription.subscribeTo",
+  //   attributes: ["subscribeTo", [Sequelize.fn("COUNT", Sequelize.col("Subscription.subscribeTo")), "subscriptionCount"]]
+  // });
 
-  const videoCounts = await User.findAll({
-    where: {
-      id: channels.map(r => r.id)
-    },
-    include: {
-      model: Video,
-      attributes: [],
-      through: {
-        attributes: []
-      }
-    },
-    group: "User.id",
-    attributes: ["id", [Sequelize.fn("COUNT", Sequelize.col("Videos.userId")), "videoCount"]]
-  });
+  // const videoCounts = await Video.findAll({
+  //   where: {
+  //     userId: channels.map(r => r.id)
+  //   },
+  //   group: "Video.userId",
+  //   attributes: ["userId", [Sequelize.fn("COUNT", Sequelize.col("Video.userId")), "videoCount"]]
+  // });
 
   channels.forEach(async (channel, index) => {
 
-    const subscribersCount = subscriptionCounts.find(r => r.id === channel.id).dataValues.subscriptionCount;
-    // const subscribersCount = await Subscription.count({
-    //   where: { subscribeTo: channel.id },
-    // });
+    // Pre refactor:
+    const subscribersCount = await Subscription.count({
+      where: { subscribeTo: channel.id },
+    });
+    // Post refactor:
+    // let subscribersCount = subscriptionCounts.find(r => r.id === channel.id);
+    // subscribersCount = subscribersCount === undefined ? 0 : subscribersCount.dataValues.subscriptionCount;
     channel.setDataValue("subscribersCount", subscribersCount);
 
-    const isSubscribed = subscriptions.find(data => data.subscribeTo === channel.id);
-    // const isSubscribed = await Subscription.findOne({
-    //   where: {
-    //     subscriber: req.user.id,
-    //     subscribeTo: channel.id,
-    //   },
-    // });
+    // Pre refactor:
+    const isSubscribed = await Subscription.findOne({
+      where: {
+        subscriber: req.user.id,
+        subscribeTo: channel.id,
+      },
+    });
+    // Post refactor:
+    // const isSubscribed = subscriptions.find(data => data.subscribeTo === channel.id);
 
     channel.setDataValue("isSubscribed", !!isSubscribed);
 
-    const videosCount = videoCounts.find(r => r.id === channel.id).dataValues.videoCount;
-    // const videosCount = await Video.count({ where: { userId: channel.id } });
+    // Pre refactor:
+    const videosCount = await Video.count({ where: { userId: channel.id } });
+    // Post refactor:
+    // let videosCount = videoCounts.find(r => r.userId === channel.id);
+    // videosCount = videosCount === undefined ? 0 : videosCount.dataValues.videoCount;
     channel.setDataValue("videosCount", videosCount);
 
     if (index === channels.length - 1) {
       const t1 = performance.now();
+      // It's hard to get reliable timing estimates. I've been navigating to the "Subscriptions" tab
+      // while logged in to an account that has no subscriptions, waiting 10s, and doing a hard refresh.
+      // That seems to give reliable performance numbers.
       console.log('==========================================');
       console.log('time elapsed: ', t1 - t0);
       console.log('==========================================');
