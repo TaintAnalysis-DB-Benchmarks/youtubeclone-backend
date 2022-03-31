@@ -336,57 +336,57 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
     return res.status(200).json({ success: true, data: channels });
 
   // Post refactor:
-  // const subscriptions = await Subscription.findAll({
-  //   where: {
-  //     subscriber: req.user.id,
-  //     subscribeTo: channels.map(r => r.id)
-  //   }
-  // });
+  const subscriptions = await Subscription.findAll({
+    where: {
+      subscriber: req.user.id,
+      subscribeTo: channels.map(r => r.id)
+    }
+  });
 
-  // const subscriptionCounts = await Subscription.findAll({
-  //   where: {
-  //     subscribeTo: channels.map(r => r.id)
-  //   },
-  //   group: "Subscription.subscribeTo",
-  //   attributes: ["subscribeTo", [Sequelize.fn("COUNT", Sequelize.col("Subscription.subscribeTo")), "subscriptionCount"]]
-  // });
+  const subscriptionCounts = await Subscription.findAll({
+    where: {
+      subscribeTo: channels.map(r => r.id)
+    },
+    group: "Subscription.subscribeTo",
+    attributes: ["subscribeTo", [Sequelize.fn("COUNT", Sequelize.col("Subscription.subscribeTo")), "subscriptionCount"]]
+  });
 
-  // const videoCounts = await Video.findAll({
-  //   where: {
-  //     userId: channels.map(r => r.id)
-  //   },
-  //   group: "Video.userId",
-  //   attributes: ["userId", [Sequelize.fn("COUNT", Sequelize.col("Video.userId")), "videoCount"]]
-  // });
+  const videoCounts = await Video.findAll({
+    where: {
+      userId: channels.map(r => r.id)
+    },
+    group: "Video.userId",
+    attributes: ["userId", [Sequelize.fn("COUNT", Sequelize.col("Video.userId")), "videoCount"]]
+  });
 
   channels.forEach(async (channel, index) => {
 
     // Pre refactor:
-    const subscribersCount = await Subscription.count({
-      where: { subscribeTo: channel.id },
-    });
+    // const subscribersCount = await Subscription.count({
+    //   where: { subscribeTo: channel.id },
+    // });
     // Post refactor:
-    // let subscribersCount = subscriptionCounts.find(r => r.id === channel.id);
-    // subscribersCount = subscribersCount === undefined ? 0 : subscribersCount.dataValues.subscriptionCount;
+    let subscribersCount = subscriptionCounts.find(r => r.subscribeTo === channel.id);
+    subscribersCount = subscribersCount === undefined ? 0 : subscribersCount.dataValues.subscriptionCount;
     channel.setDataValue("subscribersCount", subscribersCount);
 
     // Pre refactor:
-    const isSubscribed = await Subscription.findOne({
-      where: {
-        subscriber: req.user.id,
-        subscribeTo: channel.id,
-      },
-    });
+    // const isSubscribed = await Subscription.findOne({
+    //   where: {
+    //     subscriber: req.user.id,
+    //     subscribeTo: channel.id,
+    //   },
+    // });
     // Post refactor:
-    // const isSubscribed = subscriptions.find(data => data.subscribeTo === channel.id);
+    const isSubscribed = subscriptions.find(data => data.subscribeTo === channel.id);
 
     channel.setDataValue("isSubscribed", !!isSubscribed);
 
     // Pre refactor:
-    const videosCount = await Video.count({ where: { userId: channel.id } });
+    // const videosCount = await Video.count({ where: { userId: channel.id } });
     // Post refactor:
-    // let videosCount = videoCounts.find(r => r.userId === channel.id);
-    // videosCount = videosCount === undefined ? 0 : videosCount.dataValues.videoCount;
+    let videosCount = videoCounts.find(r => r.userId === channel.id);
+    videosCount = videosCount === undefined ? 0 : videosCount.dataValues.videoCount;
     channel.setDataValue("videosCount", videosCount);
 
     if (index === channels.length - 1) {
