@@ -366,7 +366,7 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
       where: { subscribeTo: channel.id },
     });
     // Post refactor:
-    // let subscribersCount = subscriptionCounts.find(r => r.id === channel.id);
+    // let subscribersCount = subscriptionCounts.find(r => r.subscribeTo === channel.id);
     // subscribersCount = subscribersCount === undefined ? 0 : subscribersCount.dataValues.subscriptionCount;
     channel.setDataValue("subscribersCount", subscribersCount);
 
