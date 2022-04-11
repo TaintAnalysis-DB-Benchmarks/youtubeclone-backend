@@ -1,3 +1,5 @@
+const Sequelize = require("sequelize");
+
 const {
   Op
 } = require("sequelize");
