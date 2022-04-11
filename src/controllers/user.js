@@ -97,7 +97,8 @@ exports.getFeed = asyncHandler(async (req, res, next) => {
     attributes: ["videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "viewCount"]]
   });
   feed.forEach(async (video, index) => {
-    const views = viewCounts.find(r => r.videoId === video.id).dataValues.viewCount;
+    const viewCounts_tmp = viewCounts.find(r => r.videoId === video.id);
+    const views = viewCounts_tmp === undefined ? 0 : viewCounts_tmp.dataValues.viewCount;
     video.setDataValue("views", views);
 
     if (index === feed.length - 1) {
@@ -169,8 +170,10 @@ exports.searchUser = asyncHandler(async (req, res, next) => {
     attributes: ["userId", [Sequelize.fn("COUNT", Sequelize.col("Video.userId")), "videoCount"]]
   });
   users.forEach(async (user, index) => {
-    const subscribersCount = subscriptionCounts.find(r => r.subscribeTo === user.id).dataValues.subscriptionCount;
-    const videosCount = videoCounts.find(r => r.userId === user.id).dataValues.videoCount;
+    const subscriptionCounts_tmp = subscriptionCounts.find(r => r.subscribeTo === user.id);
+    const subscribersCount = subscriptionCounts_tmp === undefined ? 0 : subscriptionCounts_tmp.dataValues.subscriptionCount;
+    const videoCounts_tmp = videoCounts.find(r => r.userId === user.id);
+    const videosCount = videoCounts_tmp === undefined ? 0 : videoCounts_tmp.dataValues.videoCount;
     const isSubscribed = subscriptions.find(data => data.subscribeTo === user.id);
     const isMe = req.user.id === user.id;
     user.setDataValue("subscribersCount", subscribersCount);
@@ -242,7 +245,8 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
     attributes: ["subscribeTo", [Sequelize.fn("COUNT", Sequelize.col("Subscription.subscribeTo")), "subscriptionCount"]]
   });
   channels.forEach(async channel => {
-    const subscribersCount = subscriptionCounts.find(r => r.subscribeTo === channel.id).dataValues.subscriptionCount;
+    const subscriptionCounts_tmp = subscriptionCounts.find(r => r.subscribeTo === channel.id);
+    const subscribersCount = subscriptionCounts_tmp === undefined ? 0 : subscriptionCounts_tmp.dataValues.subscriptionCount;
     channel.setDataValue("subscribersCount", subscribersCount);
   });
   user.setDataValue("channels", channels);
@@ -264,7 +268,8 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
     attributes: ["videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "viewCount"]]
   });
   videos.forEach(async (video, index) => {
-    const views = viewCounts.find(r => r.videoId === video.id).dataValues.viewCount;
+    const viewCounts_tmp = viewCounts.find(r => r.videoId === video.id);
+    const views = viewCounts_tmp === undefined ? 0 : viewCounts_tmp.dataValues.viewCount;
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
@@ -299,7 +304,8 @@ exports.recommendedVideos = asyncHandler(async (req, res, next) => {
     attributes: ["videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "viewCount"]]
   });
   videos.forEach(async (video, index) => {
-    const views = viewCounts.find(r => r.videoId === video.id).dataValues.viewCount;
+    const viewCounts_tmp = viewCounts.find(r => r.videoId === video.id);
+    const views = viewCounts_tmp === undefined ? 0 : viewCounts_tmp.dataValues.viewCount;
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
@@ -347,11 +353,13 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
     attributes: ["userId", [Sequelize.fn("COUNT", Sequelize.col("Video.userId")), "videoCount"]]
   });
   channels.forEach(async (channel, index) => {
-    const subscribersCount = subscriptionCounts.find(r => r.subscribeTo === channel.id).dataValues.subscriptionCount;
+    const subscriptionCounts_tmp = subscriptionCounts.find(r => r.subscribeTo === channel.id);
+    const subscribersCount = subscriptionCounts_tmp === undefined ? 0 : subscriptionCounts_tmp.dataValues.subscriptionCount;
     channel.setDataValue("subscribersCount", subscribersCount);
     const isSubscribed = subscriptions.find(data => data.subscribeTo === channel.id);
     channel.setDataValue("isSubscribed", !!isSubscribed);
-    const videosCount = videoCounts.find(r => r.userId === channel.id).dataValues.videoCount;
+    const videoCounts_tmp = videoCounts.find(r => r.userId === channel.id);
+    const videosCount = videoCounts_tmp === undefined ? 0 : videoCounts_tmp.dataValues.videoCount;
     channel.setDataValue("videosCount", videosCount);
 
     if (index === channels.length - 1) {
@@ -407,7 +415,8 @@ const getVideos = async (model, req, res, next) => {
     attributes: ["videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "viewCount"]]
   });
   videos.forEach(async (video, index) => {
-    const views = viewCounts.find(r => r.videoId === video.id).dataValues.viewCount;
+    const viewCounts_tmp = viewCounts.find(r => r.videoId === video.id);
+    const views = viewCounts_tmp === undefined ? 0 : viewCounts_tmp.dataValues.viewCount;
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
