@@ -1,3 +1,5 @@
+const Sequelize = require("sequelize");
+
 const {
   Op
 } = require("sequelize");
@@ -400,4 +402,3 @@ const getVideos = async (model, req, res, next) => {
     }
   });
 };
-
