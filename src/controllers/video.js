@@ -313,7 +313,7 @@ exports.searchVideo = asyncHandler(async (req, res, next) => {
     attributes: ["videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "viewCount"]]
   });
   videos.forEach(async (video, index) => {
-    const views = viewCounts.find(r => r.id === video.id).dataValues.viewCount;
+    const views = viewCounts.find(r => r.videoId === video.id).dataValues.viewCount;
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
