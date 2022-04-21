@@ -310,16 +310,16 @@ exports.searchVideo = asyncHandler(async (req, res, next) => {
     success: true,
     data: videos
   });
-  const viewCounts = await View.findAll({
+  const view_counts_96sn = await View.findAll({
     where: {
-      videoId: videos.map(r => r.id)
+      videoId: videos.map(data => data.id)
     },
-    group: "View.videoId",
-    attributes: ["videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "viewCount"]]
+    group: ["View.videoId"],
+    attributes: ["View.videoId", [Sequelize.fn("COUNT", Sequelize.col("View.videoId")), "aggregateCount"]]
   });
   videos.forEach(async (video, index) => {
-    const viewCounts_tmp = viewCounts.find(r => r.videoId === video.id);
-    const views = viewCounts_tmp === undefined ? 0 : viewCounts_tmp.dataValues.viewCount;
+    const view_counts_96sn_tmp = view_counts_96sn.find(x => x.videoId === video.id);
+    const views = view_counts_96sn_tmp === undefined ? 0 : view_counts_96sn_tmp.dataValues.aggregateCount;
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
