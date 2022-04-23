@@ -48,7 +48,7 @@ exports.toggleSubscribe = asyncHandler(async (req, res, next) => {
 
 exports.getFeed = asyncHandler(async (req, res, next) => {
   console.log('==================== getFeed // start ====================');
-  const getFeedStart = performance.now();
+  const fnStart = performance.now();
   const subscribedTo = await Subscription.findAll({
     where: {
       subscriber: req.user.id,
@@ -79,9 +79,9 @@ exports.getFeed = asyncHandler(async (req, res, next) => {
     video.setDataValue("views", views);
 
     if (index === feed.length - 1) {
-      const getFeedEnd = performance.now();
+      const fnEnd = performance.now();
       console.log('====================  getFeed // end  ====================');
-      console.log(getFeedEnd - getFeedStart);
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: feed });
     }
   });
@@ -109,6 +109,8 @@ exports.editUser = asyncHandler(async (req, res, next) => {
 });
 
 exports.searchUser = asyncHandler(async (req, res, next) => {
+  console.log('==================== searchUser // start ====================');
+  const fnStart = performance.now();
   if (!req.query.searchterm) {
     return next({ message: "Please enter your search term", statusCode: 400 });
   }
@@ -148,12 +150,17 @@ exports.searchUser = asyncHandler(async (req, res, next) => {
     user.setDataValue("isMe", isMe);
 
     if (index === users.length - 1) {
+      const fnEnd = performance.now();
+      console.log('====================  searchUser // end  ====================');
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: users });
     }
   });
 });
 
 exports.getProfile = asyncHandler(async (req, res, next) => {
+  console.log('==================== getProfile // start ====================');
+  const fnStart = performance.now();
   const user = await User.findByPk(req.params.id, {
     attributes: [
       "id",
@@ -226,12 +233,17 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
 
     if (index === videos.length - 1) {
       user.setDataValue("videos", videos);
+      const fnEnd = performance.now();
+      console.log('====================  getProfile // end  ====================');
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: user });
     }
   });
 });
 
 exports.recommendedVideos = asyncHandler(async (req, res, next) => {
+  console.log('==================== recommendVideos // start ====================');
+  const fnStart = performance.now();
   const videos = await Video.findAll({
     attributes: [
       "id",
@@ -253,12 +265,17 @@ exports.recommendedVideos = asyncHandler(async (req, res, next) => {
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
+      const fnEnd = performance.now();
+      console.log('====================  recommendVideos // end  ====================');
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: videos });
     }
   });
 });
 
 exports.recommendChannels = asyncHandler(async (req, res, next) => {
+  console.log('==================== recommendChannels // start ====================');
+  const fnStart = performance.now();
   const channels = await User.findAll({
 		limit: 10,
     attributes: ["id", "username", "avatar", "channelDescription"],
@@ -291,6 +308,9 @@ exports.recommendChannels = asyncHandler(async (req, res, next) => {
     channel.setDataValue("videosCount", videosCount);
 
     if (index === channels.length - 1) {
+      const fnEnd = performance.now();
+      console.log('====================  recommendChannels // end  ====================');
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: channels });
     }
   });
@@ -305,6 +325,8 @@ exports.getHistory = asyncHandler(async (req, res, next) => {
 });
 
 const getVideos = async (model, req, res, next) => {
+  console.log('==================== getVideos // start ====================');
+  const fnStart = performance.now();
   const videoRelations = await model.findAll({
     where: { userId: req.user.id },
     order: [["createdAt", "ASC"]],
@@ -334,6 +356,9 @@ const getVideos = async (model, req, res, next) => {
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
+      const fnEnd = performance.now();
+      console.log('====================  getVideos // end  ====================');
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: videos });
     }
   });

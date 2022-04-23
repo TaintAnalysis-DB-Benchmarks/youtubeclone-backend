@@ -9,6 +9,9 @@ const {
 } = require("../sequelize");
 const asyncHandler = require("../middlewares/asyncHandler");
 
+// Performance Stuff.
+const { performance } = require('perf_hooks');
+
 exports.newVideo = asyncHandler(async (req, res, next) => {
   const video = await Video.create({
     ...req.body,
@@ -267,6 +270,8 @@ exports.newView = asyncHandler(async (req, res, next) => {
 });
 
 exports.searchVideo = asyncHandler(async (req, res, next) => {
+  console.log('==================== searchVideo // start ====================');
+  const fnStart = performance.now();
   if (!req.query.searchterm) {
     return next({ message: "Please enter the searchterm", statusCode: 400 });
   }
@@ -293,6 +298,9 @@ exports.searchVideo = asyncHandler(async (req, res, next) => {
     video.setDataValue("views", views);
 
     if (index === videos.length - 1) {
+      const fnEnd = performance.now();
+      console.log('====================  searchVideos // end  ====================');
+      console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: videos });
     }
   });
