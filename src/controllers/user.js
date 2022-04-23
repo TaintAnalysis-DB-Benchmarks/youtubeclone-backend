@@ -2,6 +2,9 @@ const { Op } = require("sequelize");
 const { VideoLike, Video, User, Subscription, View } = require("../sequelize");
 const asyncHandler = require("../middlewares/asyncHandler");
 
+// Performance Stuff.
+const { performance } = require('perf_hooks');
+
 exports.toggleSubscribe = asyncHandler(async (req, res, next) => {
   if (req.user.id === req.params.id) {
     return next({
@@ -44,6 +47,8 @@ exports.toggleSubscribe = asyncHandler(async (req, res, next) => {
 });
 
 exports.getFeed = asyncHandler(async (req, res, next) => {
+  console.log('==================== getFeed // start ====================');
+  const getFeedStart = performance.now();
   const subscribedTo = await Subscription.findAll({
     where: {
       subscriber: req.user.id,
@@ -74,6 +79,9 @@ exports.getFeed = asyncHandler(async (req, res, next) => {
     video.setDataValue("views", views);
 
     if (index === feed.length - 1) {
+      const getFeedEnd = performance.now();
+      console.log('====================  getFeed // end  ====================');
+      console.log(getFeedEnd - getFeedStart);
       return res.status(200).json({ success: true, data: feed });
     }
   });
