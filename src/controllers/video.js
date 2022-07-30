@@ -9,6 +9,8 @@ const {
 } = require("../sequelize");
 const asyncHandler = require("../middlewares/asyncHandler");
 
+const { performance } = require('perf_hooks');
+
 exports.newVideo = asyncHandler(async (req, res, next) => {
   const video = await Video.create({
     ...req.body,
@@ -19,6 +21,8 @@ exports.newVideo = asyncHandler(async (req, res, next) => {
 });
 
 exports.getVideo = asyncHandler(async (req, res, next) => {
+  console.log('==================================== called `getVideo` ====================================');
+  const start = performance.now();
   const video = await Video.findByPk(req.params.id, {
     include: [
       {
@@ -35,36 +39,36 @@ exports.getVideo = asyncHandler(async (req, res, next) => {
     });
   }
 
-  const comments = await video.getComments({
-    order: [["createdAt", "DESC"]],
-    attributes: ["id", "text", "createdAt"],
-    include: [
-      {
-        model: User,
-        attributes: ["id", "username", "avatar"],
+  const [comments, isLiked, isDisliked] = await Promise.all([
+    video.getComments({
+      order: [["createdAt", "DESC"]],
+      attributes: ["id", "text", "createdAt"],
+      include: [
+        {
+          model: User,
+          attributes: ["id", "username", "avatar"],
+        },
+      ],
+    }),
+    VideoLike.findOne({
+      where: {
+        [Op.and]: [
+          { videoId: req.params.id },
+          { userId: req.user.id },
+          { like: 1 },
+        ],
       },
-    ],
-  });
-
-  const isLiked = await VideoLike.findOne({
-    where: {
-      [Op.and]: [
-        { videoId: req.params.id },
-        { userId: req.user.id },
-        { like: 1 },
-      ],
-    },
-  });
-
-  const isDisliked = await VideoLike.findOne({
-    where: {
-      [Op.and]: [
-        { videoId: req.params.id },
-        { userId: req.user.id },
-        { like: -1 },
-      ],
-    },
-  });
+    }),
+    VideoLike.findOne({
+      where: {
+        [Op.and]: [
+          { videoId: req.params.id },
+          { userId: req.user.id },
+          { like: -1 },
+        ],
+      },
+    })
+  ]);
 
   const commentsCount = await Comment.count({
     where: {
@@ -123,8 +127,122 @@ exports.getVideo = asyncHandler(async (req, res, next) => {
   video.setDataValue("isViewed", !!isViewed);
   video.setDataValue("subscribersCount", subscribersCount);
 
+  const end = performance.now();
+  console.log('time:', end - start);
   res.status(200).json({ success: true, data: video });
 });
+
+// exports.getVideo = asyncHandler(async (req, res, next) => {
+//   console.log('[[[[[[[[[[[[[[[[[[[[ called `getVideo` ]]]]]]]]]]]]]]]]]]]]]]');
+//   const start = performance.now();
+//   const video = await Video.findByPk(req.params.id, {
+//     include: [
+//       {
+//         model: User,
+//         attributes: ["id", "username", "avatar"],
+//       },
+//     ],
+//   });
+
+//   if (!video) {
+//     return next({
+//       message: `No video found for ID - ${req.params.id}`,
+//       statusCode: 404,
+//     });
+//   }
+
+//   const comments = await video.getComments({
+//     order: [["createdAt", "DESC"]],
+//     attributes: ["id", "text", "createdAt"],
+//     include: [
+//       {
+//         model: User,
+//         attributes: ["id", "username", "avatar"],
+//       },
+//     ],
+//   });
+
+//   const isLiked = await VideoLike.findOne({
+//     where: {
+//       [Op.and]: [
+//         { videoId: req.params.id },
+//         { userId: req.user.id },
+//         { like: 1 },
+//       ],
+//     },
+//   });
+
+//   const isDisliked = await VideoLike.findOne({
+//     where: {
+//       [Op.and]: [
+//         { videoId: req.params.id },
+//         { userId: req.user.id },
+//         { like: -1 },
+//       ],
+//     },
+//   });
+
+//   const commentsCount = await Comment.count({
+//     where: {
+//       videoId: req.params.id,
+//     },
+//   });
+
+//   const likesCount = await VideoLike.count({
+//     where: {
+//       [Op.and]: [{ videoId: req.params.id }, { like: 1 }],
+//     },
+//   });
+
+//   const dislikesCount = await VideoLike.count({
+//     where: {
+//       [Op.and]: [{ videoId: req.params.id }, { like: -1 }],
+//     },
+//   });
+
+//   const views = await View.count({
+//     where: {
+//       videoId: req.params.id,
+//     },
+//   });
+
+//   const isSubscribed = await Subscription.findOne({
+//     where: {
+//       subscriber: req.user.id,
+//       subscribeTo: video.userId,
+//     },
+//   });
+
+//   const isViewed = await View.findOne({
+//     where: {
+//       userId: req.user.id,
+//       videoId: video.id,
+//     },
+//   });
+
+//   const subscribersCount = await Subscription.count({
+//     where: { subscribeTo: video.userId },
+//   });
+
+//   const isVideoMine = req.user.id === video.userId;
+
+//   // likesCount, disLikesCount, views
+//   video.setDataValue("comments", comments);
+//   video.setDataValue("commentsCount", commentsCount);
+//   video.setDataValue("isLiked", !!isLiked);
+//   video.setDataValue("isDisliked", !!isDisliked);
+//   video.setDataValue("likesCount", likesCount);
+//   video.setDataValue("dislikesCount", dislikesCount);
+//   video.setDataValue("views", views);
+//   video.setDataValue("isVideoMine", isVideoMine);
+//   video.setDataValue("isSubscribed", !!isSubscribed);
+//   video.setDataValue("isViewed", !!isViewed);
+//   video.setDataValue("subscribersCount", subscribersCount);
+
+//   const end = performance.now();
+//   console.log('time:', end - start);
+//   res.status(200).json({ success: true, data: video });
+// });
 
 exports.likeVideo = asyncHandler(async (req, res, next) => {
   const video = await Video.findByPk(req.params.id);
