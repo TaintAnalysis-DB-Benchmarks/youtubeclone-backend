@@ -106,7 +106,6 @@ exports.getFeed = asyncHandler(async (req, res, next) => {
       console.log('====================  getFeed // end  ====================');
       console.log(fnEnd - fnStart);
       return res.status(200).json({ success: true, data: feed });
-
     }
   });
 });
